@@ -18,6 +18,7 @@ URL_PUBLICA          = os.getenv('RENDER_EXTERNAL_URL')  # Render la define sola
 HEADLESS       = os.getenv('HEADLESS', 'true').lower() == 'true'
 MAX_REINTENTOS = int(os.getenv('MAX_REINTENTOS', 2))
 DELAY_SEGUNDOS = int(os.getenv('DELAY_SEGUNDOS', 20))    # pausa entre personas
+TIMEOUT_SIMIT  = int(os.getenv('TIMEOUT_SIMIT', 120))
 ZONA_HORARIA   = 'America/Bogota'
 
 # ── URLs ────────────────────────────────────────────────

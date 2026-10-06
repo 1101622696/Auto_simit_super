@@ -1,6 +1,6 @@
 """
 Prueba una persona sin servidor ni Apps Script.
-Uso:  python probar_local.py NOTI-0001 1098765432
+Uso:  python probar_local.py NOTI-0010 1062308342
 Agrega --callback al final si quieres que también avise a Apps Script.
 """
 import sys
@@ -9,7 +9,7 @@ from worker import procesar_trabajo
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print('Uso: python probar_local.py NOTI-0001 1098765432 [--callback]')
+        print('Uso: python probar_local.py NOTI-0010 1062308342 [--callback]')
         sys.exit(1)
     errores = config.validar_config()
     if errores:

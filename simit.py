@@ -4,6 +4,7 @@ Descarga el PDF de SIMIT para una cédula:
   - sin valores  → "Descargar paz y salvo" → "Descargar"
 Devuelve (ruta_pdf, None) si sale bien, o (None, motivo) si falla.
 """
+import time
 from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 import config
 
@@ -23,6 +24,28 @@ def _cerrar_modal_publicitario(page):
     except Exception as e:
         print(f'   ⚠️ No se pudo cerrar el modal: {e}')
         page.keyboard.press('Escape')
+
+def _quitar_modales(page):
+    """Cierra el modal si aparece en cualquier momento (en Render llega tarde)."""
+    try:
+        x = page.locator('span.modal-info-close:visible')
+        if x.count() > 0:
+            x.first.click()
+            page.wait_for_timeout(800)
+            print('   ✖ Modal cerrado (apareció tarde)')
+    except Exception:
+        pass
+
+
+def _diagnostico(page, cedula):
+    """Imprime en los logs qué estaba mostrando la página cuando falló."""
+    try:
+        print(f'   🔎 URL: {page.url}')
+        texto = page.inner_text('body')[:800].replace('\n', ' | ')
+        print(f'   🔎 Texto visible: {texto}')
+        page.screenshot(path=f'debug_simit_{cedula}.png')
+    except Exception as e:
+        print(f'   🔎 No se pudo diagnosticar: {e}')
 
 
 def descargar_certificado(cedula, ruta_destino):
@@ -47,19 +70,42 @@ def descargar_certificado(cedula, ruta_destino):
 
             _cerrar_modal_publicitario(page)
 
+            # Dar tiempo a que la página termine de cargar (en Render es lenta)
+            try:
+                page.wait_for_load_state('networkidle', timeout=30000)
+            except PWTimeout:
+                pass
+            _quitar_modales(page)
+
             # Buscar la cédula
             campo = page.locator('#txtBusqueda')
             campo.wait_for(state='visible', timeout=30000)
             campo.fill(cedula)
-            page.locator('#consultar').click(force=True)
+            _quitar_modales(page)
+            try:
+                page.locator('#consultar').click(timeout=15000)
+            except PWTimeout:
+                print('   ⚠️ No se pudo hacer clic en consultar, se intenta con Enter')
+                _quitar_modales(page)
+                campo.press('Enter')
 
-            # Esperar cualquiera de los dos botones posibles
+            # Esperar cualquiera de los dos botones, cerrando el modal si aparece
             btn_estado = page.locator('a[data-target="#modal-estado-cuenta"]')
             btn_paz    = page.locator('a:has-text("Descargar paz y salvo")')
-            try:
-                btn_estado.or_(btn_paz).first.wait_for(state='visible', timeout=60000)
-            except PWTimeout:
-                page.screenshot(path=f'debug_simit_{cedula}.png')
+            caso = None
+            fin = time.time() + config.TIMEOUT_SIMIT
+            while time.time() < fin:
+                _quitar_modales(page)
+                if btn_estado.first.is_visible():
+                    caso = 'estado'
+                    break
+                if btn_paz.first.is_visible():
+                    caso = 'paz'
+                    break
+                page.wait_for_timeout(2000)
+
+            if not caso:
+                _diagnostico(page, cedula)
                 return None, 'no encontrado'
 
             if btn_estado.first.is_visible():
