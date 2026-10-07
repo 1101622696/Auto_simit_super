@@ -29,7 +29,7 @@ SUPERVIGILANCIA_URL = 'https://apo.supervigilancia.gov.co/AcreditaPO/BuscaPerson
 COL_ID_NOTIFICACION      = 1
 COL_LINK_SIMIT           = 12   # L
 COL_LINK_SUPERVIGILANCIA = 13   # M
-COL_ESTADO_PYTHON        = 14   # N
+COL_ESTADO_PYTHON        = 17   # N
 
 
 def validar_config():
